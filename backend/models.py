@@ -36,3 +36,24 @@ class AuthResponse(BaseModel):
     message: str
     user: Optional[User] = None
 
+
+class FileRecord(BaseModel):
+    """File record representation."""
+
+    id: int
+    patient_id: int
+    filename: str
+    file_type: str
+    file_size: int
+    s3_url: Optional[str] = None
+    upload_status: str
+    extraction_status: str
+    created_at: Optional[datetime] = None
+
+
+class FileUploadResponse(BaseModel):
+    """Response after file upload request."""
+
+    message: str
+    files: list[FileRecord]
+

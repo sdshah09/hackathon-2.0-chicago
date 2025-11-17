@@ -27,7 +27,6 @@ def _ensure_database_url() -> str:
 @contextmanager
 def get_connection() -> Iterator[psycopg.Connection]:
     """Yield a psycopg3 connection."""
-    print(_ensure_database_url())
     conn = psycopg.connect(
         _ensure_database_url(), autocommit=True, row_factory=dict_row
     )
