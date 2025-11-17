@@ -149,3 +149,16 @@ def file_exists(s3_key: str) -> bool:
         # Re-raise if it's a different error
         raise RuntimeError(f"Error checking file existence in S3: {e}") from e
 
+
+def get_file_url(s3_key: str) -> str:
+    """
+    Get the public URL for an S3 file.
+
+    Args:
+        s3_key: S3 object key (path) of the file
+
+    Returns:
+        S3 URL of the file
+    """
+    return f"https://{S3_BUCKET}.s3.{AWS_REGION}.amazonaws.com/{s3_key}"
+
