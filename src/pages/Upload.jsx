@@ -1,37 +1,74 @@
-import React, { useState } from 'react';
-import Dropzone from '../components/Dropzone.jsx';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import "../styles/upload.css";
 
-export default function Upload(){
-  const [file, setFile] = useState(null);
-  const nav = useNavigate();
+const Upload = () => {
+  const [category, setCategory] = useState("");
+  const [files, setFiles] = useState([]);
 
-  function handleProcess(){
-    nav('/result');
-  }
+  const handleFiles = (e) => {
+    const selectedFiles = Array.from(e.target.files);
+
+    // Add uploaded files without removing the existing ones
+    setFiles((prev) => [...prev, ...selectedFiles]);
+  };
+
+  const handleUpload = () => {
+    if (!category) {
+      alert("Please select upload category");
+      return;
+    }
+
+    if (files.length === 0) {
+      alert("Please upload at least 1 file!");
+      return;
+    }
+
+    localStorage.setItem(
+      "uploadedFiles",
+      JSON.stringify(files.map((f) => f.name))
+    );
+    localStorage.setItem("uploadCategory", category);
+
+    window.location.hash = "#/loading";
+  };
 
   return (
-    <div style={{ maxWidth:"600px", margin:"auto", padding:"40px" }}>
-      <h1>Upload File</h1>
+    <div className="upload-container">
+      <div className="upload-card">
+        <h2>Upload Files</h2>
 
-      <Dropzone onFileSelect={(f)=>setFile(f)} />
+        {/* Select category */}
+        <label>Select Upload Type</label>
+        <select value={category} onChange={(e) => setCategory(e.target.value)}>
+          <option value="">-- Select Upload Category --</option>
+          <option value="Medical Report">Medical Report (PDF/Image)</option>
+          <option value="Prescription">Prescription</option>
+          <option value="Lab Report">Lab Report</option>
+          <option value="Scan">Scan / MRI / X-Ray</option>
+        </select>
 
-      {file && <p style={{ marginTop:"20px" }}>Selected: {file.name}</p>}
+        {/* File input */}
+        <label>Choose Multiple Files</label>
+        <input type="file" multiple onChange={handleFiles} />
 
-      <button
-        onClick={handleProcess}
-        style={{
-          marginTop:"20px",
-          width:"100%",
-          padding:"12px",
-          background:"#28a745",
-          color:"#fff",
-          border:"none",
-          borderRadius:"6px"
-        }}
-      >
-        Continue
-      </button>
+        {/* Show file list */}
+        {files.length > 0 && (
+          <div className="file-list">
+            <h4>Files Selected ({files.length}):</h4>
+            <ul>
+              {files.map((file, i) => (
+                <li key={i}>• {file.name}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <button className="upload-btn" onClick={handleUpload}>
+          Upload & Analyze
+        </button>
+      </div>
     </div>
   );
-}
+};
+
+export default Upload;

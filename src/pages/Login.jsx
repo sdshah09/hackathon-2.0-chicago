@@ -1,49 +1,53 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import "../styles/login.css";
 
-export default function Login(){
-  const nav = useNavigate();
-  const [user, setUser] = useState('');
-  const [pass, setPass] = useState('');
+const Login = () => {
+  const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
 
-  function handleLogin(){
-    if(user && pass){
-      nav('/upload');
-    } else {
-      alert('Enter both fields');
+  const handleLogin = () => {
+    if (!name.trim()) {
+      alert("Enter your full name");
+      return;
     }
-  }
+
+    if (!password.trim()) {
+      alert("Enter your password");
+      return;
+    }
+
+    // Store login details
+    localStorage.setItem("fullName", name);
+    localStorage.setItem("userPassword", password);
+
+    window.location.hash = "#/dashboard";
+  };
 
   return (
-    <div style={{ maxWidth:"400px", margin:"auto", padding:"40px" }}>
-      <h1>Login</h1>
-      <input 
-        placeholder="User ID"
-        value={user}
-        onChange={e=>setUser(e.target.value)}
-        style={{ width:"100%", padding:"10px", marginBottom:"10px" }}
-      />
-      <input 
-        type="password"
-        placeholder="Password"
-        value={pass}
-        onChange={e=>setPass(e.target.value)}
-        style={{ width:"100%", padding:"10px" }}
-      />
-      <button 
-        onClick={handleLogin}
-        style={{
-          marginTop:"20px",
-          width:"100%",
-          padding:"12px",
-          background:"#4a90e2",
-          color:"#fff",
-          border:"none",
-          borderRadius:"6px"
-        }}
-      >
-        Login
-      </button>
+    <div className="login-container">
+      <div className="login-card">
+        <h2>Login</h2>
+
+        <label>Full Name</label>
+        <input
+          type="text"
+          placeholder="Enter full name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+
+        <label>Password</label>
+        <input
+          type="password"
+          placeholder="Enter password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+
+        <button onClick={handleLogin}>Login</button>
+      </div>
     </div>
   );
-}
+};
+
+export default Login;
