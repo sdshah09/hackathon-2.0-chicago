@@ -1,5 +1,5 @@
 # pyright: reportMissingImports=false
-"""Text extraction service using PaddleOCR (boilerplate - to be implemented)."""
+"""Text extraction service using Pathway parsers (replaces custom OCR)."""
 
 from __future__ import annotations
 
@@ -49,17 +49,16 @@ def save_extracted_text(file_id: int, extracted_text: str, metadata: Optional[di
             )
 
 
-async def extract_text_from_file(file_id: int, s3_key: str, file_type: str) -> None:
+async def extract_text_from_file(file_id: int, s3_key: str, file_type: str, patient_id: int, filename: str) -> None:
     """
-    Extract text from a file asynchronously.
-    
-    This is a boilerplate function - actual extraction logic will be implemented later.
-    For now, it simulates the extraction process.
+    Extract text from a file asynchronously using Pathway parsers.
     
     Args:
         file_id: Database ID of the file
         s3_key: S3 key of the file to extract text from
         file_type: Type of file (jpeg, png, pdf)
+        patient_id: Patient/user ID
+        filename: Original filename
     """
     # Update status to processing
     update_extraction_status(file_id, "processing")
@@ -75,17 +74,46 @@ async def extract_text_from_file(file_id: int, s3_key: str, file_type: str) -> N
             s3_key,
         )
 
-        # TODO: Implement actual extraction logic here
-        # For JPEG/PNG: Use PaddleOCR
-        # For PDF: Extract text or use OCR if needed
+        # Use Pathway to parse the file
+        from .pathway_service import parse_file_with_pathway
         
-        # Placeholder extraction logic
-        extracted_text = await _perform_extraction(file_content, file_type)
+        parsed_result = await parse_file_with_pathway(
+            file_content=file_content,
+            file_type=file_type,
+            filename=filename,
+            patient_id=patient_id,
+            file_id=file_id,
+        )
 
         # Save extracted text to database
-        save_extracted_text(file_id, extracted_text)
+        extracted_text = parsed_result.get('text', '')
+        chunks = parsed_result.get('chunks', [])
+        metadata = parsed_result.get('metadata', {})
+        
+        save_extracted_text(file_id, extracted_text, metadata)
+        
+        # Index document in Pathway for RAG retrieval
+        try:
+            from .pathway_rag_service import add_document_to_index
+            from ..utils.s3_client import get_file_url
+            
+            # Get S3 URL
+            s3_url = get_file_url(s3_key) if s3_key else None
+            
+            # Add to Pathway index
+            add_document_to_index(
+                text_chunks=chunks,
+                patient_id=patient_id,
+                file_id=file_id,
+                filename=filename,
+                s3_url=s3_url,
+            )
+            print(f"✅ Indexed {len(chunks)} chunks in Pathway for file {file_id}")
+        except Exception as e:
+            # Don't fail extraction if indexing fails
+            print(f"⚠️  Warning: Failed to index in Pathway: {e}")
 
-        print(f"✅ Successfully extracted text from file {file_id}")
+        print(f"✅ Successfully extracted text from file {file_id} using Pathway")
 
     except Exception as e:
         # Mark extraction as failed
@@ -94,35 +122,5 @@ async def extract_text_from_file(file_id: int, s3_key: str, file_type: str) -> N
         raise
 
 
-async def _perform_extraction(file_content: bytes, file_type: str) -> str:
-    """
-    Perform actual text extraction (boilerplate - to be implemented).
-    
-    Args:
-        file_content: Binary content of the file
-        file_type: Type of file (jpeg, png, pdf)
-    
-    Returns:
-        Extracted text as string
-    """
-    # TODO: Implement PaddleOCR for images (JPEG, PNG)
-    # TODO: Implement PDF text extraction
-    
-    # Placeholder - returns empty string for now
-    if file_type in ["jpeg", "png"]:
-        # TODO: Use PaddleOCR
-        # from paddleocr import PaddleOCR
-        # ocr = PaddleOCR(use_angle_cls=True, lang='en')
-        # result = ocr.ocr(file_content, cls=True)
-        # return extracted_text
-        return f"[Placeholder: OCR extraction for {file_type} - to be implemented]"
-    
-    elif file_type == "pdf":
-        # TODO: Extract text from PDF
-        # import PyPDF2 or pdfplumber
-        # return extracted_text
-        return "[Placeholder: PDF text extraction - to be implemented]"
-    
-    else:
-        return "[Placeholder: Unknown file type]"
+# Removed _perform_extraction - now using Pathway parsers directly
 

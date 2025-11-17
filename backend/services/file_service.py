@@ -141,13 +141,16 @@ async def upload_file_to_s3_async(
 
         # Schedule extraction task (fire and forget - runs independently)
         # Get the current event loop and create task
+        file_type = _normalize_file_type(content_type)
         try:
             loop = asyncio.get_event_loop()
             loop.create_task(
                 extraction_service.extract_text_from_file(
                     file_id=file_id,
                     s3_key=s3_key,
-                    file_type=_normalize_file_type(content_type),
+                    file_type=file_type,
+                    patient_id=patient_id,
+                    filename=filename,
                 )
             )
         except RuntimeError:
@@ -156,7 +159,9 @@ async def upload_file_to_s3_async(
                 extraction_service.extract_text_from_file(
                     file_id=file_id,
                     s3_key=s3_key,
-                    file_type=_normalize_file_type(content_type),
+                    file_type=file_type,
+                    patient_id=patient_id,
+                    filename=filename,
                 )
             )
 
