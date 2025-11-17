@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from passlib.context import CryptContext
+import bcrypt
 from psycopg.errors import UniqueViolation
 
 from .models import User
@@ -24,7 +24,20 @@ class UserAlreadyExistsError(AuthenticationError):
     """Raised when attempting to register a duplicate username."""
 
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+def _hash_password(password: str) -> str:
+    """Hash a password using bcrypt."""
+    # Convert password to bytes and hash it
+    password_bytes = password.encode('utf-8')
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password_bytes, salt)
+    return hashed.decode('utf-8')
+
+
+def _verify_password(password: str, hashed: str) -> bool:
+    """Verify a password against a hash."""
+    password_bytes = password.encode('utf-8')
+    hashed_bytes = hashed.encode('utf-8')
+    return bcrypt.checkpw(password_bytes, hashed_bytes)
 
 
 def _row_to_user(row: dict) -> User:
@@ -43,7 +56,7 @@ def _normalize_username(username: str) -> str:
 def register_user(username: str, password: str, full_name: Optional[str] = None) -> User:
     """Create a new user record."""
 
-    hashed_password = pwd_context.hash(password)
+    hashed_password = _hash_password(password)
     normalized_username = _normalize_username(username)
 
     try:
@@ -85,7 +98,7 @@ def authenticate_user(username: str, password: str) -> User:
     if not row:
         raise InvalidCredentialsError("Invalid username or password")
 
-    if not pwd_context.verify(password, row["password_hash"]):
+    if not _verify_password(password, row["password_hash"]):
         raise InvalidCredentialsError("Invalid username or password")
 
     return _row_to_user(row)
